@@ -1,11 +1,15 @@
 checkpoints/*
 __pycache__/
 data/*
+!data/
 logs/*
+!logs/
 outputs/*
+!outputs/
 wandb/*
+!wandb/
 
 _*.ipynb
-_*.__pycache__
-
+_*.py
+.gitignore
 tree.txt
