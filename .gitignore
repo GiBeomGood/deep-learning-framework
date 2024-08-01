@@ -1,0 +1,11 @@
+checkpoints/*
+__pycache__/
+data/*
+logs/*
+outputs/*
+wandb/*
+
+_*.ipynb
+_*.__pycache__
+
+tree.txt

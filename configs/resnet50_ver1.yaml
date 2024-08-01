@@ -1,0 +1,47 @@
+check_prop: 0.01
+gpu_num: 4
+epochs: 100
+model_class: resnet
+model_name: resnet50
+data_name: cifar100
+model_save_path: ./checkpoints/${data_name}
+
+ddp:
+  do: true
+  kwargs:
+    nprocs: 3
+    join: true
+
+wandb:
+  do: true
+  kwargs:
+    project: logging_practice
+    name: ${data_name}/${model_name}
+
+dataset:
+  root: ./data
+  download: true
+
+dataloader:
+  train:
+    batch_size: 32
+    shuffle: true
+
+  val:
+    batch_size: 128
+    shuffle: false
+
+early_stopping:
+  val_key: val accuracy
+  tolerance: 5
+  higher_better: true
+
+model:
+  model_num: 50
+  output_dim: 100
+  loss_kwargs: {}
+  val_loss_kwargs:
+    reduction: sum
+
+optimizer:
+  lr: 0.001
