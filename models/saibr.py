@@ -82,6 +82,7 @@ class SeqAtt(nn.Module):
 
 
 class ImputationModel(BaseModel):
+    train_keys = ('loss', )
     val_keys = ('loss', 'mae')
 
     def __init__(
@@ -110,10 +111,10 @@ class ImputationModel(BaseModel):
 
         return output
     
-    def forward(self, x, mask) -> Tensor:
+    def forward(self, x, mask) -> dict[str, Tensor]:
         output = self.get_output(x, mask)
         loss: Tensor = self.criterion(output[mask], x[mask])
-        return loss
+        return dict(loss=loss)
     
     @torch.no_grad()
     def validate_batch(self, x: Tensor, mask: Tensor) -> dict[str, float]:

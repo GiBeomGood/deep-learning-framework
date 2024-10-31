@@ -161,7 +161,7 @@ class Resnet(BaseModel):
 
         return output, output.softmax(dim=1)
     
-    def forward(self, image: Tensor, label: Tensor) -> Tensor:
+    def forward(self, image: Tensor, label: Tensor) -> dict[str, Tensor]:
         raise NotImplementedError('define forward function')
     
     def validate_batch(self, image: Tensor, label: Tensor) -> dict[str, float]:
@@ -169,6 +169,7 @@ class Resnet(BaseModel):
 
 
 class ResnetClassifier(Resnet):
+    train_keys = ('loss', )
     val_keys = ('loss', 'accuracy')
 
     def __init__(
@@ -182,10 +183,10 @@ class ResnetClassifier(Resnet):
             (label_pred == label).sum()
         return
     
-    def forward(self, image, label) -> Tensor:
+    def forward(self, image, label) -> dict[str, Tensor]:
         output = self.get_output(image)
         loss = self.criterion(output, label)
-        return loss
+        return dict(loss=loss)
     
     @torch.no_grad()
     def validate_batch(self, image, label) -> dict[str, Tensor]:

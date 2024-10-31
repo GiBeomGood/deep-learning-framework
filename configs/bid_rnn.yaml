@@ -41,8 +41,7 @@ model:
   n_layers: 1
   num_heads: 1
   loss_kwargs: {}
-  val_loss_kwargs:
-    reduction: sum
+  val_loss_kwargs: {}
 
 optimizer:
   lr: 0.001

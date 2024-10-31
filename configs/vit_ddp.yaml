@@ -48,8 +48,7 @@ model:
     num_blocks: 3
     dropout: 0.1
   loss_kwargs: {}
-  val_loss_kwargs:
-    reduction: sum
+  val_loss_kwargs: {}
 
 optimizer:
   lr: 0.001

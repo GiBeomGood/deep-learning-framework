@@ -7,7 +7,7 @@ from models import BaseModel
 
 
 class EarlyStopping:
-    def __init__(self, val_key, tolerance=5, higher_better=True):
+    def __init__(self, val_key: str, tolerance=5, higher_better=True):
         self.deviation = 0
         self.val_key = val_key
         self.tolerance = tolerance
@@ -48,8 +48,10 @@ class EarlyStopping:
 @torch.no_grad()
 def val_loop(model: BaseModel, val_loader: DataLoader) -> dict[str, float]:
     device = next(model.parameters()).device
-    val_metrics = {key: [] for key in model.val_keys}
     dataset_len = len(val_loader.dataset)
+    batch_size = val_loader.batch_size
+    last_len = dataset_len % batch_size
+    val_metrics = {key: [] for key in model.val_keys}
 
     model.eval()
     for batch in val_loader:
@@ -57,21 +59,58 @@ def val_loop(model: BaseModel, val_loader: DataLoader) -> dict[str, float]:
         batch = {key: tensor.to(device) for key, tensor in batch.items()}
 
         batch_metrics = model.validate_batch(**batch)
-        for key, val in batch_metrics.items():
-            val_metrics[key].append(val)
-            # val: reduction `sum` applied
+        for key, value in batch_metrics.items():
+            val_metrics[key].append(value)
 
-    val_metrics = {f"val {key}": sum(results) / dataset_len for key, results in val_metrics.items()}
+    if last_len != 0:
+        for value in val_metrics.values():
+            value[-1] *= last_len / batch_size
+
+    val_metrics = {
+        f"val {key}": sum(results) * batch_size / dataset_len
+        for key, results in val_metrics.items()
+    }
 
     return val_metrics
+
+
+@torch.no_grad()
+def test(model: BaseModel, test_loader: DataLoader) -> dict[str, float]:
+    device = next(model.parameters()).device
+    test_metrics = {key: [] for key in model.val_keys}
+    dataset_len = len(test_loader.dataset)
+    outputs = []
+
+    model.eval()
+    for batch in test_loader:
+        batch: dict[str, Tensor]
+        batch = {key: tensor.to(device) for key, tensor in batch.items()}
+
+        output = model.predict(**batch)
+        outputs.append(output)
+
+        test_metrics = model.validate_batch(**batch)
+        for key, val in test_metrics.items():
+            test_metrics[key] = val
+
+    test_metrics = {
+        f"test {key}": sum(results) / dataset_len
+        for key, results in test_metrics.items()
+    }
+
+    # example for Time Series
+    # outputs = torch.cat(outputs, dim=0)
+    # outputs = torch.cat([outputs[:, 0], outputs[-1, 1:]], dim=0)
+
+    return outputs, test_metrics
 
 
 def pbar_finish(
     pbar: tqdm,
     train_metrics: dict[str, float],
     val_metrics: dict[str, float],
-    formatter_train: dict[str, str]=None,
-    formatter_val: dict[str, str]=None
+    formatter_train: dict[str, str] = None,
+    formatter_val: dict[str, str] = None,
 ) -> dict[str, float]:
     # train_metrics = {
     #     key: formatter_train[f"train {key}"].format(val) \

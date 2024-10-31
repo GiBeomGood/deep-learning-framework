@@ -5,7 +5,8 @@ from torch import Tensor, nn
 
 
 class BaseModel(nn.Module, ABC):
-    val_keys: tuple[str] = ()
+    train_keys: tuple[str, ...] = ('loss', )
+    val_keys: tuple[str, ...] = ()
     
     def __init__(self):
         super().__init__()
@@ -21,7 +22,7 @@ class BaseModel(nn.Module, ABC):
         pass
 
     @abstractmethod
-    def forward(self, *args, **kwargs) -> Tensor:
+    def forward(self, *args, **kwargs) -> dict[str, Tensor]:
         pass
 
     @abstractmethod
