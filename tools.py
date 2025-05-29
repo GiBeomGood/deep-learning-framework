@@ -1,3 +1,5 @@
+from statistics import mean
+
 import torch
 from torch import Tensor
 from torch.utils.data import DataLoader
@@ -46,11 +48,8 @@ class EarlyStopping:
 
 
 @torch.no_grad()
-def val_loop(model: BaseModel, val_loader: DataLoader) -> dict[str, float]:
-    device = next(model.parameters()).device
-    dataset_len = len(val_loader.dataset)
-    batch_size = val_loader.batch_size
-    last_len = dataset_len % batch_size
+def val_loop(model: BaseModel, val_loader: DataLoader, kind="val") -> dict[str, float]:
+    device = model.device
     val_metrics = {key: [] for key in model.val_keys}
 
     model.eval()
@@ -62,66 +61,6 @@ def val_loop(model: BaseModel, val_loader: DataLoader) -> dict[str, float]:
         for key, value in batch_metrics.items():
             val_metrics[key].append(value)
 
-    if last_len != 0:
-        for value in val_metrics.values():
-            value[-1] *= last_len / batch_size
-
-    val_metrics = {
-        f"val {key}": sum(results) * batch_size / dataset_len
-        for key, results in val_metrics.items()
-    }
+    val_metrics = {f"{kind}/{key}": mean(results) for key, results in val_metrics.items()}
 
     return val_metrics
-
-
-@torch.no_grad()
-def test(model: BaseModel, test_loader: DataLoader) -> dict[str, float]:
-    device = next(model.parameters()).device
-    test_metrics = {key: [] for key in model.val_keys}
-    dataset_len = len(test_loader.dataset)
-    outputs = []
-
-    model.eval()
-    for batch in test_loader:
-        batch: dict[str, Tensor]
-        batch = {key: tensor.to(device) for key, tensor in batch.items()}
-
-        output = model.predict(**batch)
-        outputs.append(output)
-
-        test_metrics = model.validate_batch(**batch)
-        for key, val in test_metrics.items():
-            test_metrics[key] = val
-
-    test_metrics = {
-        f"test {key}": sum(results) / dataset_len
-        for key, results in test_metrics.items()
-    }
-
-    # example for Time Series
-    # outputs = torch.cat(outputs, dim=0)
-    # outputs = torch.cat([outputs[:, 0], outputs[-1, 1:]], dim=0)
-
-    return outputs, test_metrics
-
-
-def pbar_finish(
-    pbar: tqdm,
-    train_metrics: dict[str, float],
-    val_metrics: dict[str, float],
-    formatter_train: dict[str, str] = None,
-    formatter_val: dict[str, str] = None,
-) -> dict[str, float]:
-    # train_metrics = {
-    #     key: formatter_train[f"train {key}"].format(val) \
-    #         for key, val in train_metrics.items()
-    # }
-    # val_metrics = {
-    #     key: formatter_val[f"val {key}"].format(val) \
-    #         for key, val in val_metrics.items()
-    # }
-    postfix = train_metrics | val_metrics
-    pbar.set_postfix(postfix)
-    pbar.close()
-
-    return postfix

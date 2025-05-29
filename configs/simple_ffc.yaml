@@ -1,0 +1,30 @@
+model_name: simple-ffc
+model_save_path: ./checkpoints/cifar100
+device: 2
+epochs: 100
+check_prop: 0.01
+disable_pbar: false
+
+wandb:
+  do: false
+
+dataloader:
+  train:
+    batch_size: 128
+    shuffle: true
+    num_workers: 1
+    pin_memory: true
+
+  val:
+    batch_size: 512
+    shuffle: false
+    num_workers: 1
+    pin_memory: true
+
+optimizer:
+  lr: 1e-4
+
+early_stopping:
+  val_key: val/acc
+  tolerance: 5
+  higher_better: true
