@@ -3,9 +3,9 @@ epochs: 100
 check_prop: 0.01
 disable_pbar: false
 
-compile: true
+compile: false
 
-model_name: resnet50
+model_name: vit
 data_name: cifar10
 model_save_dir: checkpoints/${data_name}
 model_save_path: ${model_save_dir}/${model_name}.pt
@@ -18,22 +18,27 @@ dataset:
 dataloader:
   train:
     batch_size: 128
-    shuffle: true
+    shuffle: false
     pin_memory: true
   val:
     batch_size: 512
     shuffle: false
-  test:
-    batch_size: 512
-    shuffle: false
-
 early_stopping:
   val_key: val/acc
   tolerance: 5
   higher_better: true
 
 model:
-  num_classes: 10
+  vit_kwargs:
+    in_channels: 3
+    hidden_channels: 128
+    num_classes: 100
+    expansion: 2
+    image_size: 224
+    patch_size: 16
+    num_heads: 8
+    num_blocks: 3
+    dropout: 0.1
 
 optimizer:
   lr: 1e-4

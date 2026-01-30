@@ -1,6 +1,9 @@
+from abc import abstractmethod
 from math import sqrt
 
 import torch
+import torch.nn.functional as F  # noqa: N812
+from tensordict import TensorDict
 from torch import Tensor, nn
 
 from .base_model import BaseModel
@@ -94,8 +97,8 @@ class VisionTransformer(BaseModel):
         self,
         in_channels,
         hidden_channels,
-        expansion,
         num_classes,
+        expansion,
         image_size,
         patch_size,
         num_heads,
@@ -121,48 +124,46 @@ class VisionTransformer(BaseModel):
 
         return output
 
-    @torch.inference_mode()
-    def predict(self, x: Tensor) -> tuple[Tensor, Tensor]:
-        output = self.get_output(x)
+    @abstractmethod
+    def forward(self, image: Tensor, target: Tensor) -> TensorDict:
+        pass
 
-        return output, output.softmax(dim=1)
-
-    def forward(self, image: Tensor, label: Tensor) -> dict[str, Tensor]:
-        raise NotImplementedError("define forward function")
-
-    def validate_batch(self, image: Tensor, label: Tensor) -> dict[str, float]:
-        raise NotImplementedError("define validate_batch function")
+    @abstractmethod
+    def validate_batch(self, image: Tensor, target: Tensor) -> TensorDict:
+        pass
 
 
 class ViTClassifier(VisionTransformer):
-    train_keys = ("loss",)
-    val_keys = ("loss", "accuracy")
-
-    def __init__(
-        self,
-        vit_kwargs={},
-        loss_kwargs={},
-        val_loss_kwargs={},
-    ):
-        super().__init__()
-        self.model = VisionTransformer(**vit_kwargs)
-
-        self.criterion = nn.CrossEntropyLoss(**loss_kwargs)
-        self.val_criterion = nn.CrossEntropyLoss(**val_loss_kwargs)
-        self.accuracy = lambda label_pred, label: (label_pred == label).sum()
+    def __init__(self, vit_kwargs: dict):
+        super().__init__(**vit_kwargs)
         return
 
-    def forward(self, image: Tensor, label: Tensor) -> dict[str, Tensor]:
-        output = self.model.get_output(image)
-        loss = self.criterion(output, label)
-        return dict(loss=loss)
+    def forward(self, image: Tensor, target: Tensor) -> TensorDict:
+        output = self.get_output(image)
+        loss = F.cross_entropy(output, target)
+        output_dict = TensorDict(
+            {
+                "loss": loss,
+                "metrics": {
+                    "loss": loss.detach(),
+                },
+            },
+            batch_size=(),
+        )
+        return output_dict
 
     @torch.inference_mode()
-    def validate_batch(self, image: Tensor, label: Tensor) -> dict[str, Tensor]:
-        output, prob = self.model.predict(image)
-        label_pred = prob.argmax(dim=1)
+    def validate_batch(self, image: Tensor, target: Tensor) -> TensorDict:
+        output = self.get_output(image)  # (-1, C)
+        label_pred = output.argmax(1)  # (-1)
 
-        loss = self.val_criterion(output, label).item()
-        accuracy = self.accuracy(label_pred, label).item()
-
-        return dict(zip(self.val_keys, (loss, accuracy)))
+        loss = F.cross_entropy(output, target)
+        acc = target.eq(label_pred).float().mean()
+        output_dict = TensorDict(
+            {
+                "loss": loss,
+                "acc": acc,
+            },
+            batch_size=(),
+        )
+        return output_dict

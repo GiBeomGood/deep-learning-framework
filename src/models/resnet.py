@@ -17,7 +17,7 @@ class ResNetClassifier(BaseModel):
     def get_output(self, image: Tensor) -> Tensor:
         return self.resnet(image)
 
-    def forward(self, image: Tensor, target: Tensor):
+    def forward(self, image: Tensor, target: Tensor) -> TensorDict:
         output = self.get_output(image)  # (-1, C)
         loss = F.cross_entropy(output, target)
         output_dict = TensorDict(
@@ -32,7 +32,7 @@ class ResNetClassifier(BaseModel):
         return output_dict
 
     @torch.inference_mode()
-    def validate_batch(self, image: Tensor, target: Tensor):
+    def validate_batch(self, image: Tensor, target: Tensor) -> TensorDict:
         output = self.get_output(image)  # (-1, C)
         label_pred = output.argmax(1)  # (-1)
 

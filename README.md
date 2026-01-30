@@ -21,6 +21,8 @@ The codebase is structured to separate data loading, model definitions, and trai
 ├── manuals/                # Documentation and workflow guides
 ├── notebooks/              # Jupyter notebooks for analysis and experiments
 │   └── *.ipynb
+├── scripts                 # shell scripts
+│   └── *.sh
 ├── src/                    # Source code
 │   ├── data/               # Data loaders and preprocessing
 │   │   └── *.py
