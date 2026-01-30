@@ -1,11 +1,12 @@
 from statistics import mean
 
 import torch
+from tensordict import TensorDict
 from torch import Tensor
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from models import BaseModel
+from src.models import BaseModel
 
 
 class EarlyStopping:
@@ -47,20 +48,25 @@ class EarlyStopping:
             return standard < self.best_standard
 
 
-@torch.no_grad()
+@torch.inference_mode()
 def val_loop(model: BaseModel, val_loader: DataLoader, kind="val") -> dict[str, float]:
     device = model.device
-    val_metrics = {key: [] for key in model.val_keys}
+    val_metrics = TensorDict(dict(), batch_size=(len(val_loader),), device=device)
 
     model.eval()
-    for batch in val_loader:
-        batch: dict[str, Tensor]
-        batch = {key: tensor.to(device) for key, tensor in batch.items()}
+    for i, batch in enumerate(val_loader):
+        batch: TensorDict
+        batch = batch.to(device)
 
         batch_metrics = model.validate_batch(**batch)
-        for key, value in batch_metrics.items():
-            val_metrics[key].append(value)
+        val_metrics[i] = batch_metrics
 
-    val_metrics = {f"{kind}/{key}": mean(results) for key, results in val_metrics.items()}
+    val_metrics = {f"{kind}/{key}": value.item() for key, value in val_metrics.mean().to_dict().items()}
 
     return val_metrics
+
+
+def pbar_finish(pbar: tqdm, train_metrics: dict[str, float], val_metrics: dict[str, float]) -> dict[str, float]:
+    metrics = train_metrics | val_metrics
+    pbar.set_postfix(metrics)
+    return metrics

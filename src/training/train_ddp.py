@@ -1,4 +1,3 @@
-import os
 from statistics import mean
 from typing import Any
 
@@ -12,10 +11,10 @@ from torch.utils.data.distributed import DistributedSampler
 from tqdm import tqdm
 
 import wandb
-from models import BaseModel
-from tools import EarlyStopping, pbar_finish, val_loop
+from src.models import BaseModel
+from src.utils.tools import EarlyStopping, pbar_finish, val_loop
 
-os.environ["TORCH_DISTRIBUTED_DEBUG"] = "DETAIL"
+# os.environ["TORCH_DISTRIBUTED_DEBUG"] = "DETAIL"
 
 
 def train_loop(
@@ -49,25 +48,18 @@ def train_loop(
                 train_metrics[key].append(value.item())
 
             if pbar.n % check_unit == 0:
-                pbar.set_postfix(
-                    {key: mean(value_list) for key, value_list in train_metrics.items()}
-                )
+                pbar.set_postfix({key: mean(value_list) for key, value_list in train_metrics.items()})
             pbar_update()
 
     if rank == 0:
-        train_metrics = {
-            f"train {key}": mean(value_list)
-            for key, value_list in train_metrics.items()
-        }
+        train_metrics = {f"train {key}": mean(value_list) for key, value_list in train_metrics.items()}
         return pbar, train_metrics
 
     else:
         return None, None
 
 
-def _ddp_setup(
-    rank: int, world_size: int, config: DictConfig, train_set: Dataset, val_set: Dataset
-) -> tuple[Any, ...]:
+def _ddp_setup(rank: int, world_size: int, config: DictConfig, train_set: Dataset, val_set: Dataset) -> tuple[Any, ...]:
     distributed.init_process_group(
         backend="nccl",
         init_method="tcp://localhost:12355",
@@ -92,9 +84,7 @@ def _ddp_setup(
 
         if config.wandb.do is True:
             run = wandb.init(
-                config=OmegaConf.to_container(
-                    config, resolve=True, throw_on_missing=True
-                ),
+                config=OmegaConf.to_container(config, resolve=True, throw_on_missing=True),
                 **config.wandb.kwargs,
             )
 
@@ -133,17 +123,15 @@ def _ddp_train_worker(
     train_set: Dataset,
     val_set: Dataset,
 ) -> None:
-    train_loader, val_loader, early_stopping, early_stop, check_unit, device, run = (
-        _ddp_setup(rank, world_size, config, train_set, val_set)
+    train_loader, val_loader, early_stopping, early_stop, check_unit, device, run = _ddp_setup(
+        rank, world_size, config, train_set, val_set
     )
     model = model(**config.model).to(device)
     model: DDP = DDP(model, device_ids=[device])
     optimizer = torch.optim.Adam(model.parameters(), **config.optimizer)
 
     for epoch in range(config.epochs):
-        pbar, train_metrics = train_loop(
-            rank, model, train_loader, optimizer, epoch, check_unit
-        )
+        pbar, train_metrics = train_loop(rank, model, train_loader, optimizer, epoch, check_unit)
         if rank == 0:
             val_metrics = val_loop(model.module, val_loader)
             postfix = pbar_finish(pbar, train_metrics, val_metrics)

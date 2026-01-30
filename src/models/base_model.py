@@ -17,7 +17,7 @@ class BaseModel(nn.Module, ABC):
         pass
 
     # @abstractmethod
-    # @torch.no_grad()
+    # @torch.inference_mode()
     # def predict(self, *args, **kwargs) -> Tensor:
     #     pass
 

@@ -1,0 +1,39 @@
+gpu_num: 0
+epochs: 100
+check_prop: 0.01
+disable_pbar: false
+
+compile: false
+
+model_name: resnet50
+data_name: cifar10
+model_save_dir: checkpoints/${data_name}
+model_save_path: ${model_save_dir}/${model_name}.pt
+
+dataset:
+  root: ./data
+  download: true
+  seed: 42
+
+dataloader:
+  train:
+    batch_size: 128
+    shuffle: true
+    pin_memory: true
+  val:
+    batch_size: 512
+    shuffle: false
+  test:
+    batch_size: 512
+    shuffle: false
+
+early_stopping:
+  val_key: val/acc
+  tolerance: 5
+  higher_better: true
+
+model:
+  num_classes: 10
+
+optimizer:
+  lr: 1e-4

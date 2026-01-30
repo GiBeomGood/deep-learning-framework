@@ -4,6 +4,7 @@ from torch import nn
 
 # incomplete
 
+
 def positional_encoding(x):
     height = x.size(1)
     d_model = x.size(2)
@@ -49,9 +50,7 @@ class MultiHeadAttention(nn.Module):
             self_att_score += mask * -1e9
         self_att_score = self_att_score.softmax(dim=-1)  # (-1 x num_heads x T x T)
 
-        output = torch.einsum(
-            "ijkm,ijml->ijkl", self_att_score, value
-        )  # (-1 x num_heads x T x d_k)
+        output = torch.einsum("ijkm,ijml->ijkl", self_att_score, value)  # (-1 x num_heads x T x d_k)
         output = output.permute(0, 2, 1, 3).contiguous()  # (-1 x T x num_heads x d_k)
         output = output.view(*output_size)  # (-1 x T x d)
         output = self.layer_output(output)
@@ -90,10 +89,9 @@ class Encoder(nn.Module):
         super().__init__()
         self.num_layers = num_layers
         self.dropout = nn.Dropout(dropout)
-        self.encoder_layers = nn.ModuleList([
-                EncoderLayer(input_dim, hidden_dim, num_heads, dropout)
-                    for _ in range(num_layers)
-            ])
+        self.encoder_layers = nn.ModuleList(
+            [EncoderLayer(input_dim, hidden_dim, num_heads, dropout) for _ in range(num_layers)]
+        )
 
         return
 
@@ -143,10 +141,9 @@ class Decoder(nn.Module):
     def __init__(self, input_dim, hidden_dim, num_layers, num_heads, dropout):
         super().__init__()
         self.dropout = nn.Dropout(dropout)
-        self.decoder_layers = nn.ModuleList([
-                DecoderLayer(input_dim, hidden_dim, num_heads, dropout)
-                    for _ in range(num_layers)
-            ])
+        self.decoder_layers = nn.ModuleList(
+            [DecoderLayer(input_dim, hidden_dim, num_heads, dropout) for _ in range(num_layers)]
+        )
 
         return
 
@@ -177,9 +174,7 @@ class Transformer(nn.Module):
         return output
 
     def generate_padding_mask(self, x):
-
-        return
+        raise NotImplementedError
 
     def generate_target_mask(self, x):
-
-        return
+        raise NotImplementedError
