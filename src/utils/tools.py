@@ -1,8 +1,5 @@
-from statistics import mean
-
 import torch
 from tensordict import TensorDict
-from torch import Tensor
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
