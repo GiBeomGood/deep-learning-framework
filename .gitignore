@@ -168,6 +168,6 @@ tensorboard/
 Thumbs.db
 
 # custom
-/data/
-checkpoints/
+data/
+checkpoints/*
 **/*fuck*
