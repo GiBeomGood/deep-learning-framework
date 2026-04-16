@@ -1,4 +1,4 @@
 #!/bin/zsh
 
-ruff format . --no-cache
-ruff check . --select I --fix --no-cache
+uv run ruff format . --no-cache
+uv run ruff check . --select I --fix --no-cache

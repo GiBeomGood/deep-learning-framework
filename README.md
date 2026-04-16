@@ -36,7 +36,7 @@ The repository currently includes implementations of:
 
 ### Environment Setup
 
-This project uses **Zsh** as the primary shell. To set up the environment, it is recommended to use a virtual environment or Conda.
+This project uses **zsh** as the primary shell. To set up the environment, it is recommended to use a virtual environment or Conda.
 
 ```zsh
 # Clone the repository
@@ -44,7 +44,7 @@ git clone <repository_url>
 cd deep-learning-framework
 
 # Install dependencies
-pip install torch torchvision omegaconf tensordict tqdm
+uv sync --frozen
 ```
 
 ### Running Experiments
@@ -54,7 +54,7 @@ Experiments are driven by configuration files in the `configs/` directory. By de
 To start a training session:
 
 ```zsh
-python main.py
+uv run python main.py
 ```
 
 To use a different configuration, you can modify `main.py` or use OmegaConf's CLI overrides (if implemented):
